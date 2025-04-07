@@ -11,7 +11,6 @@ from mcp_agent.llm.providers.augmented_llm_anthropic import AnthropicAugmentedLL
 from mcp_agent.llm.providers.augmented_llm_deepseek import DeepSeekAugmentedLLM
 from mcp_agent.llm.providers.augmented_llm_generic import GenericAugmentedLLM
 from mcp_agent.llm.providers.augmented_llm_openai import OpenAIAugmentedLLM
-from mcp_agent.llm.providers.augmented_llm_openrouter import AugmentedOpenRouterLLM
 from mcp_agent.mcp.interfaces import AugmentedLLMProtocol
 
 # from mcp_agent.workflows.llm.augmented_llm_deepseek import DeekSeekAugmentedLLM
@@ -21,7 +20,6 @@ from mcp_agent.mcp.interfaces import AugmentedLLMProtocol
 LLMClass = Union[
     Type[AnthropicAugmentedLLM],
     Type[OpenAIAugmentedLLM],
-    Type[AugmentedOpenRouterLLM],
     Type[PassthroughLLM],
     Type[PlaybackLLM],
     Type[DeepSeekAugmentedLLM],
@@ -33,7 +31,6 @@ class Provider(Enum):
 
     ANTHROPIC = auto()
     OPENAI = auto()
-    OPENROUTER = auto()
     FAST_AGENT = auto()
     DEEPSEEK = auto()
     GENERIC = auto()
@@ -54,7 +51,6 @@ class ModelConfig:
     provider: Provider
     model_name: str
     reasoning_effort: Optional[ReasoningEffort] = None
-    original_specifier: Optional[str] = None
 
 
 class ModelFactory:
@@ -64,7 +60,6 @@ class ModelFactory:
     PROVIDER_MAP = {
         "anthropic": Provider.ANTHROPIC,
         "openai": Provider.OPENAI,
-        "openrouter": Provider.OPENROUTER,
         "fast-agent": Provider.FAST_AGENT,
         "deepseek": Provider.DEEPSEEK,
         "generic": Provider.GENERIC,
@@ -108,7 +103,7 @@ class ModelFactory:
         "sonnet": "claude-3-7-sonnet-latest",
         "sonnet35": "claude-3-5-sonnet-latest",
         "sonnet37": "claude-3-7-sonnet-latest",
-        "claude": "claude-3-5-sonnet-latest",
+        "claude": "claude-3-7-sonnet-latest",
         "haiku": "claude-3-5-haiku-latest",
         "haiku3": "claude-3-haiku-20240307",
         "haiku35": "claude-3-5-haiku-latest",
@@ -122,7 +117,6 @@ class ModelFactory:
     PROVIDER_CLASSES: Dict[Provider, LLMClass] = {
         Provider.ANTHROPIC: AnthropicAugmentedLLM,
         Provider.OPENAI: OpenAIAugmentedLLM,
-        Provider.OPENROUTER: AugmentedOpenRouterLLM,
         Provider.FAST_AGENT: PassthroughLLM,
         Provider.DEEPSEEK: DeepSeekAugmentedLLM,
         Provider.GENERIC: GenericAugmentedLLM,
@@ -137,51 +131,38 @@ class ModelFactory:
     @classmethod
     def parse_model_string(cls, model_string: str) -> ModelConfig:
         """Parse a model string into a ModelConfig object"""
-        original_specifier = model_string
-        # Check if model string is an alias (before provider check)
+        # Check if model string is an alias
         model_string = cls.MODEL_ALIASES.get(model_string, model_string)
+        parts = model_string.split(".")
 
+        # Start with all parts as the model name
+        model_parts = parts.copy()
         provider = None
-        model_name = model_string
         reasoning_effort = None
 
-        # Check for explicit provider prefix (e.g., "openrouter:google/gemini...")
-        if ":" in model_string:
-            potential_provider, potential_model_name = model_string.split(":", 1)
-            if potential_provider in cls.PROVIDER_MAP:
-                provider = cls.PROVIDER_MAP[potential_provider]
-                model_name = potential_model_name
-                model_string = model_name # Continue parsing the rest for effort
-            # else: Keep original model_string if prefix doesn't match known provider
-
-        # Parse reasoning effort (if any)
-        parts = model_string.split(".")
-        model_parts = parts.copy()
-
+        # Check last part for reasoning effort
         if len(parts) > 1 and parts[-1].lower() in cls.EFFORT_MAP:
             reasoning_effort = cls.EFFORT_MAP[parts[-1].lower()]
             model_parts = model_parts[:-1]
-            model_name = ".".join(model_parts) # Update model name without effort suffix
 
+        # Check first part for provider
+        if len(model_parts) > 1:
+            potential_provider = model_parts[0]
+            if potential_provider in cls.PROVIDER_MAP:
+                provider = cls.PROVIDER_MAP[potential_provider]
+                model_parts = model_parts[1:]
 
-        # If no provider was found yet, look it up in defaults
+        # Join remaining parts as model name
+        model_name = ".".join(model_parts)
+
+        # If no provider was found in the string, look it up in defaults
         if provider is None:
             provider = cls.DEFAULT_PROVIDERS.get(model_name)
             if provider is None:
-                # Special case: if it wasn't found and contains '/', assume it's an OpenRouter model
-                # This allows using names like 'google/gemini-flash' without the prefix
-                # IF it's not in DEFAULT_PROVIDERS.
-                if '/' in model_name:
-                    provider = Provider.OPENROUTER
-                    # original_specifier = f"openrouter:{model_name}" # Optional: reconstruct for clarity
-                else:
-                    raise ModelConfigError(f"Unknown model or provider for: {original_specifier}")
+                raise ModelConfigError(f"Unknown model: {model_name}")
 
         return ModelConfig(
-            provider=provider,
-            model_name=model_name,
-            reasoning_effort=reasoning_effort,
-            original_specifier=original_specifier # Store original string
+            provider=provider, model_name=model_name, reasoning_effort=reasoning_effort
         )
 
     @classmethod
@@ -207,19 +188,11 @@ class ModelFactory:
 
         # Create a factory function matching the updated attach_llm protocol
         def factory(
-            agent: Agent,
-            request_params_override: Optional[RequestParams] = None, # Renamed for clarity
-            **kwargs
+            agent: Agent, request_params: Optional[RequestParams] = None, **kwargs
         ) -> AugmentedLLMProtocol:
-
-            # Merge request params: start with factory defaults, then override with function call params
-            final_request_params = request_params.model_copy(deep=True) if request_params else RequestParams()
-            if request_params_override:
-                final_request_params = final_request_params.model_copy(update=request_params_override.model_dump(exclude_unset=True))
-
-            # Ensure the model name from the parsed config is set in the final params
-            # This is crucial for OpenRouter where model_name is the specific OR model ID
-            final_request_params.model = config.model_name
+            # Create base params with parsed model name
+            base_params = RequestParams()
+            base_params.model = config.model_name  # Use the parsed model name, not the alias
 
             # Add reasoning effort if available
             if config.reasoning_effort:
@@ -228,9 +201,9 @@ class ModelFactory:
             # Forward all arguments to LLM constructor
             llm_args = {
                 "agent": agent,
-                "request_params": final_request_params, # Pass merged params
-                "model": config.model_name, # Pass the specific model name again for constructor
-                **kwargs
+                "model": config.model_name,
+                "request_params": request_params,
+                **kwargs,
             }
 
             llm: AugmentedLLMProtocol = llm_class(**llm_args)
