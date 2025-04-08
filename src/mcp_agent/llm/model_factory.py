@@ -11,6 +11,7 @@ from mcp_agent.llm.providers.augmented_llm_anthropic import AnthropicAugmentedLL
 from mcp_agent.llm.providers.augmented_llm_deepseek import DeepSeekAugmentedLLM
 from mcp_agent.llm.providers.augmented_llm_generic import GenericAugmentedLLM
 from mcp_agent.llm.providers.augmented_llm_openai import OpenAIAugmentedLLM
+from mcp_agent.llm.providers.augmented_llm_openrouter import AugmentedOpenRouterLLM
 from mcp_agent.mcp.interfaces import AugmentedLLMProtocol
 
 # from mcp_agent.workflows.llm.augmented_llm_deepseek import DeekSeekAugmentedLLM
@@ -34,6 +35,7 @@ class Provider(Enum):
     FAST_AGENT = auto()
     DEEPSEEK = auto()
     GENERIC = auto()
+    OPENROUTER = auto()
 
 
 class ReasoningEffort(Enum):
@@ -63,6 +65,7 @@ class ModelFactory:
         "fast-agent": Provider.FAST_AGENT,
         "deepseek": Provider.DEEPSEEK,
         "generic": Provider.GENERIC,
+        "openrouter": Provider.OPENROUTER,
     }
 
     # Mapping of effort strings to enum values
@@ -96,6 +99,14 @@ class ModelFactory:
         "claude-3-opus-20240229": Provider.ANTHROPIC,
         "claude-3-opus-latest": Provider.ANTHROPIC,
         "deepseek-chat": Provider.DEEPSEEK,
+        "openrouter/mistral-7b": Provider.OPENROUTER,
+        "openrouter/mixtral-8x7b": Provider.OPENROUTER,
+        "openrouter/neural-chat": Provider.OPENROUTER,
+        "openrouter/claude-3-opus": Provider.OPENROUTER,
+        "openrouter/gpt-4": Provider.OPENROUTER,
+        "openrouter/meta-llama/llama-4-scout:free": Provider.OPENROUTER,
+        "openrouter/meta-llama/llama-4-maverick:free": Provider.OPENROUTER,
+        "openrouter/rekaai/reka-flash-3:free": Provider.OPENROUTER,
         #        "deepseek-reasoner": Provider.DEEPSEEK, reinstate on release
     }
 
@@ -111,6 +122,14 @@ class ModelFactory:
         "opus3": "claude-3-opus-latest",
         "deepseekv3": "deepseek-chat",
         "deepseek": "deepseek-chat",
+        "mistral": "openrouter/mistral-7b",
+        "mixtral": "openrouter/mixtral-8x7b",
+        "neural": "openrouter/neural-chat",
+        "or-claude": "openrouter/claude-3-opus",
+        "or-gpt4": "openrouter/gpt-4",
+        "llama4s": "openrouter/meta-llama/llama-4-scout:free",
+        "llama4m": "openrouter/meta-llama/llama-4-maverick:free",
+        "reka3": "openrouter/rekaai/reka-flash-3:free",
     }
 
     # Mapping of providers to their LLM classes
@@ -120,6 +139,7 @@ class ModelFactory:
         Provider.FAST_AGENT: PassthroughLLM,
         Provider.DEEPSEEK: DeepSeekAugmentedLLM,
         Provider.GENERIC: GenericAugmentedLLM,
+        Provider.OPENROUTER: AugmentedOpenRouterLLM,
     }
 
     # Mapping of special model names to their specific LLM classes
