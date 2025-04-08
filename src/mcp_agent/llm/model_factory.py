@@ -102,6 +102,7 @@ class ModelFactory:
         "meta-llama/llama-4-scout:free": Provider.OPENROUTER,
         "meta-llama/llama-4-maverick:free": Provider.OPENROUTER,
         "reka/reka-flash-3:free": Provider.OPENROUTER,
+        "google/gemini-2.5-pro-exp-03-25:free": Provider.OPENROUTER,
         #        "deepseek-reasoner": Provider.DEEPSEEK, reinstate on release
     }
 
@@ -120,6 +121,7 @@ class ModelFactory:
         "llama4s": "meta-llama/llama-4-scout:free",
         "llama4m": "meta-llama/llama-4-maverick:free",
         "reka3": "reka/reka-flash-3:free",
+        "gemini25": "google/gemini-2.5-pro-exp-03-25:free",
     }
 
     # Mapping of providers to their LLM classes
@@ -158,6 +160,16 @@ class ModelFactory:
         # Check first part for provider
         if len(model_parts) > 1:
             potential_provider = model_parts[0]
+            # For OpenRouter models, keep the full model path
+            if (
+                model_string in cls.DEFAULT_PROVIDERS
+                and cls.DEFAULT_PROVIDERS[model_string] == Provider.OPENROUTER
+            ):
+                model_name = model_string
+                provider = Provider.OPENROUTER
+                return ModelConfig(
+                    provider=provider, model_name=model_name, reasoning_effort=reasoning_effort
+                )
             # Handle both colon and slash separators for provider
             if ":" in potential_provider:
                 potential_provider = potential_provider.split(":")[0]

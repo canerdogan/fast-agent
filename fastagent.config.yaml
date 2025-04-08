@@ -3,7 +3,7 @@
 #
 #
 
-default_model: llama4m
+default_model: gemini25
 
 execution_engine: asyncio
 logger:
