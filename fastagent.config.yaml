@@ -3,6 +3,8 @@
 #
 #
 
+default_model: llama4m
+
 execution_engine: asyncio
 logger:
   type: file

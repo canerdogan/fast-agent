@@ -99,14 +99,9 @@ class ModelFactory:
         "claude-3-opus-20240229": Provider.ANTHROPIC,
         "claude-3-opus-latest": Provider.ANTHROPIC,
         "deepseek-chat": Provider.DEEPSEEK,
-        "openrouter/mistral-7b": Provider.OPENROUTER,
-        "openrouter/mixtral-8x7b": Provider.OPENROUTER,
-        "openrouter/neural-chat": Provider.OPENROUTER,
-        "openrouter/claude-3-opus": Provider.OPENROUTER,
-        "openrouter/gpt-4": Provider.OPENROUTER,
-        "openrouter/meta-llama/llama-4-scout:free": Provider.OPENROUTER,
-        "openrouter/meta-llama/llama-4-maverick:free": Provider.OPENROUTER,
-        "openrouter/rekaai/reka-flash-3:free": Provider.OPENROUTER,
+        "meta-llama/llama-4-scout:free": Provider.OPENROUTER,
+        "meta-llama/llama-4-maverick:free": Provider.OPENROUTER,
+        "reka/reka-flash-3:free": Provider.OPENROUTER,
         #        "deepseek-reasoner": Provider.DEEPSEEK, reinstate on release
     }
 
@@ -122,14 +117,9 @@ class ModelFactory:
         "opus3": "claude-3-opus-latest",
         "deepseekv3": "deepseek-chat",
         "deepseek": "deepseek-chat",
-        "mistral": "openrouter/mistral-7b",
-        "mixtral": "openrouter/mixtral-8x7b",
-        "neural": "openrouter/neural-chat",
-        "or-claude": "openrouter/claude-3-opus",
-        "or-gpt4": "openrouter/gpt-4",
-        "llama4s": "openrouter/meta-llama/llama-4-scout:free",
-        "llama4m": "openrouter/meta-llama/llama-4-maverick:free",
-        "reka3": "openrouter/rekaai/reka-flash-3:free",
+        "llama4s": "meta-llama/llama-4-scout:free",
+        "llama4m": "meta-llama/llama-4-maverick:free",
+        "reka3": "reka/reka-flash-3:free",
     }
 
     # Mapping of providers to their LLM classes
@@ -168,6 +158,9 @@ class ModelFactory:
         # Check first part for provider
         if len(model_parts) > 1:
             potential_provider = model_parts[0]
+            # Handle both colon and slash separators for provider
+            if ":" in potential_provider:
+                potential_provider = potential_provider.split(":")[0]
             if potential_provider in cls.PROVIDER_MAP:
                 provider = cls.PROVIDER_MAP[potential_provider]
                 model_parts = model_parts[1:]
