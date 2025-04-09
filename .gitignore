@@ -191,3 +191,5 @@ fastagent.jsonl
 tests/integration/resources/fastagent.jsonl
 fastagent.jsonl
 tests/e2e/workflow/weather_location.txt
+/gamebyte
+/gamebyte_backup

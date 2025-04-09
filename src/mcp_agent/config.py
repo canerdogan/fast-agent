@@ -148,6 +148,18 @@ class GenericSettings(BaseModel):
     model_config = ConfigDict(extra="allow", arbitrary_types_allowed=True)
 
 
+class OpenRouterSettings(BaseModel):
+    """
+    Settings for using OpenRouter models in the fast-agent application.
+    """
+
+    api_key: str | None = None
+
+    base_url: str | None = None
+
+    model_config = ConfigDict(extra="allow", arbitrary_types_allowed=True)
+
+
 class TemporalSettings(BaseModel):
     """
     Temporal settings for the fast-agent application.
@@ -264,6 +276,9 @@ class Settings(BaseSettings):
 
     generic: GenericSettings | None = None
     """Settings for using Generic models in the fast-agent application"""
+
+    openrouter: OpenRouterSettings | None = None
+    """Settings for using OpenRouter models in the fast-agent application"""
 
     logger: LoggerSettings | None = LoggerSettings()
     """Logger settings for the fast-agent application"""

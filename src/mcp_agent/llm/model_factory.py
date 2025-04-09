@@ -11,6 +11,7 @@ from mcp_agent.llm.providers.augmented_llm_anthropic import AnthropicAugmentedLL
 from mcp_agent.llm.providers.augmented_llm_deepseek import DeepSeekAugmentedLLM
 from mcp_agent.llm.providers.augmented_llm_generic import GenericAugmentedLLM
 from mcp_agent.llm.providers.augmented_llm_openai import OpenAIAugmentedLLM
+from mcp_agent.llm.providers.augmented_llm_openrouter import AugmentedOpenRouterLLM
 from mcp_agent.mcp.interfaces import AugmentedLLMProtocol
 
 # from mcp_agent.workflows.llm.augmented_llm_deepseek import DeekSeekAugmentedLLM
@@ -34,6 +35,7 @@ class Provider(Enum):
     FAST_AGENT = auto()
     DEEPSEEK = auto()
     GENERIC = auto()
+    OPENROUTER = auto()
 
 
 class ReasoningEffort(Enum):
@@ -63,6 +65,7 @@ class ModelFactory:
         "fast-agent": Provider.FAST_AGENT,
         "deepseek": Provider.DEEPSEEK,
         "generic": Provider.GENERIC,
+        "openrouter": Provider.OPENROUTER,
     }
 
     # Mapping of effort strings to enum values
@@ -96,6 +99,10 @@ class ModelFactory:
         "claude-3-opus-20240229": Provider.ANTHROPIC,
         "claude-3-opus-latest": Provider.ANTHROPIC,
         "deepseek-chat": Provider.DEEPSEEK,
+        "meta-llama/llama-4-scout:free": Provider.OPENROUTER,
+        "meta-llama/llama-4-maverick:free": Provider.OPENROUTER,
+        "reka/reka-flash-3:free": Provider.OPENROUTER,
+        "google/gemini-2.5-pro-exp-03-25:free": Provider.OPENROUTER,
         #        "deepseek-reasoner": Provider.DEEPSEEK, reinstate on release
     }
 
@@ -111,6 +118,10 @@ class ModelFactory:
         "opus3": "claude-3-opus-latest",
         "deepseekv3": "deepseek-chat",
         "deepseek": "deepseek-chat",
+        "llama4s": "meta-llama/llama-4-scout:free",
+        "llama4m": "meta-llama/llama-4-maverick:free",
+        "reka3": "reka/reka-flash-3:free",
+        "gemini25": "google/gemini-2.5-pro-exp-03-25:free",
     }
 
     # Mapping of providers to their LLM classes
@@ -120,6 +131,7 @@ class ModelFactory:
         Provider.FAST_AGENT: PassthroughLLM,
         Provider.DEEPSEEK: DeepSeekAugmentedLLM,
         Provider.GENERIC: GenericAugmentedLLM,
+        Provider.OPENROUTER: AugmentedOpenRouterLLM,
     }
 
     # Mapping of special model names to their specific LLM classes
@@ -148,6 +160,19 @@ class ModelFactory:
         # Check first part for provider
         if len(model_parts) > 1:
             potential_provider = model_parts[0]
+            # For OpenRouter models, keep the full model path
+            if (
+                model_string in cls.DEFAULT_PROVIDERS
+                and cls.DEFAULT_PROVIDERS[model_string] == Provider.OPENROUTER
+            ):
+                model_name = model_string
+                provider = Provider.OPENROUTER
+                return ModelConfig(
+                    provider=provider, model_name=model_name, reasoning_effort=reasoning_effort
+                )
+            # Handle both colon and slash separators for provider
+            if ":" in potential_provider:
+                potential_provider = potential_provider.split(":")[0]
             if potential_provider in cls.PROVIDER_MAP:
                 provider = cls.PROVIDER_MAP[potential_provider]
                 model_parts = model_parts[1:]

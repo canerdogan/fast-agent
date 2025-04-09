@@ -3,6 +3,8 @@
 #
 #
 
+default_model: gemini25
+
 execution_engine: asyncio
 logger:
   type: file
