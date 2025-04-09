@@ -190,3 +190,5 @@ tests/integration/workflow/orchestrator/fastagent.jsonl
 fastagent.jsonl
 tests/integration/resources/fastagent.jsonl
 fastagent.jsonl
+/gamebyte
+/gamebyte_backup
