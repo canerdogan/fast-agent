@@ -10,7 +10,7 @@
 ## Overview
 
 > [!TIP]
-> Documentation site is in production here : https://fast-agent.ai. Feel free to feed back what's helpful and what's not.
+> Documentation site is in production here : https://fast-agent.ai. Feel free to feed back what's helpful and what's not. llms.txt link is here: https://fast-agent.ai/llms.txt
 
 **`fast-agent`** enables you to create and interact with sophisticated Agents and Workflows in minutes. It is the first framework with complete, end-to-end tested MCP Feature support including Sampling. Both Anthropic (Haiku, Sonnet, Opus) and OpenAI models (gpt-4o family, o1/o3 family) are supported.
 
@@ -40,10 +40,10 @@ uv pip install fast-agent-mcp       # install fast-agent!
 fast-agent setup                    # create an example agent and config files
 uv run agent.py                     # run your first agent
 uv run agent.py --model=o3-mini.low # specify a model
-fast-agent bootstrap workflow       # create "building effective agents" examples
+fast-agent quickstart workflow       # create "building effective agents" examples
 ```
 
-Other bootstrap examples include a Researcher Agent (with Evaluator-Optimizer workflow) and Data Analysis Agent (similar to the ChatGPT experience), demonstrating MCP Roots support.
+Other quickstart examples include a Researcher Agent (with Evaluator-Optimizer workflow) and Data Analysis Agent (similar to the ChatGPT experience), demonstrating MCP Roots support.
 
 > [!TIP]
 > Windows Users - there are a couple of configuration changes needed for the Filesystem and Docker MCP Servers - necessary changes are detailed within the configuration files.
@@ -99,7 +99,7 @@ Specify a model with the `--model` switch - for example `uv run sizer.py --model
 
 ### Combining Agents and using MCP Servers
 
-_To generate examples use `fast-agent bootstrap workflow`. This example can be run with `uv run workflow/chaining.py`. fast-agent looks for configuration files in the current directory before checking parent directories recursively._
+_To generate examples use `fast-agent quickstart workflow`. This example can be run with `uv run workflow/chaining.py`. fast-agent looks for configuration files in the current directory before checking parent directories recursively._
 
 Agents can be chained to build a workflow, using MCP Servers defined in the `fastagent.config.yaml` file:
 
@@ -221,7 +221,7 @@ async with fast.run() as agent:
 
 When used in a workflow, it returns the last `generator` message as the result.
 
-See the `evaluator.py` workflow example, or `fast-agent bootstrap researcher` for a more complete example.
+See the `evaluator.py` workflow example, or `fast-agent quickstart researcher` for a more complete example.
 
 ### Router
 

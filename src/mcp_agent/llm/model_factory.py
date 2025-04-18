@@ -1,17 +1,19 @@
-from dataclasses import dataclass
-from enum import Enum, auto
+from enum import Enum
 from typing import Callable, Dict, Optional, Type, Union
+
+from pydantic import BaseModel
 
 from mcp_agent.agents.agent import Agent
 from mcp_agent.core.exceptions import ModelConfigError
 from mcp_agent.core.request_params import RequestParams
 from mcp_agent.llm.augmented_llm_passthrough import PassthroughLLM
 from mcp_agent.llm.augmented_llm_playback import PlaybackLLM
+from mcp_agent.llm.provider_types import Provider
 from mcp_agent.llm.providers.augmented_llm_anthropic import AnthropicAugmentedLLM
 from mcp_agent.llm.providers.augmented_llm_deepseek import DeepSeekAugmentedLLM
 from mcp_agent.llm.providers.augmented_llm_generic import GenericAugmentedLLM
 from mcp_agent.llm.providers.augmented_llm_openai import OpenAIAugmentedLLM
-from mcp_agent.llm.providers.augmented_llm_openrouter import AugmentedOpenRouterLLM
+from mcp_agent.llm.providers.augmented_llm_openrouter import OpenRouterAugmentedLLM
 from mcp_agent.mcp.interfaces import AugmentedLLMProtocol
 
 # from mcp_agent.workflows.llm.augmented_llm_deepseek import DeekSeekAugmentedLLM
@@ -24,18 +26,8 @@ LLMClass = Union[
     Type[PassthroughLLM],
     Type[PlaybackLLM],
     Type[DeepSeekAugmentedLLM],
+    Type[OpenRouterAugmentedLLM],
 ]
-
-
-class Provider(Enum):
-    """Supported LLM providers"""
-
-    ANTHROPIC = auto()
-    OPENAI = auto()
-    FAST_AGENT = auto()
-    DEEPSEEK = auto()
-    GENERIC = auto()
-    OPENROUTER = auto()
 
 
 class ReasoningEffort(Enum):
@@ -46,8 +38,7 @@ class ReasoningEffort(Enum):
     HIGH = "high"
 
 
-@dataclass
-class ModelConfig:
+class ModelConfig(BaseModel):
     """Configuration for a specific model"""
 
     provider: Provider
@@ -57,16 +48,6 @@ class ModelConfig:
 
 class ModelFactory:
     """Factory for creating LLM instances based on model specifications"""
-
-    # Mapping of provider strings to enum values
-    PROVIDER_MAP = {
-        "anthropic": Provider.ANTHROPIC,
-        "openai": Provider.OPENAI,
-        "fast-agent": Provider.FAST_AGENT,
-        "deepseek": Provider.DEEPSEEK,
-        "generic": Provider.GENERIC,
-        "openrouter": Provider.OPENROUTER,
-    }
 
     # Mapping of effort strings to enum values
     EFFORT_MAP = {
@@ -84,6 +65,9 @@ class ModelFactory:
         "playback": Provider.FAST_AGENT,
         "gpt-4o": Provider.OPENAI,
         "gpt-4o-mini": Provider.OPENAI,
+        "gpt-4.1": Provider.OPENAI,
+        "gpt-4.1-mini": Provider.OPENAI,
+        "gpt-4.1-nano": Provider.OPENAI,
         "o1-mini": Provider.OPENAI,
         "o1": Provider.OPENAI,
         "o1-preview": Provider.OPENAI,
@@ -99,10 +83,6 @@ class ModelFactory:
         "claude-3-opus-20240229": Provider.ANTHROPIC,
         "claude-3-opus-latest": Provider.ANTHROPIC,
         "deepseek-chat": Provider.DEEPSEEK,
-        "meta-llama/llama-4-scout:free": Provider.OPENROUTER,
-        "meta-llama/llama-4-maverick:free": Provider.OPENROUTER,
-        "reka/reka-flash-3:free": Provider.OPENROUTER,
-        "google/gemini-2.5-pro-exp-03-25:free": Provider.OPENROUTER,
         #        "deepseek-reasoner": Provider.DEEPSEEK, reinstate on release
     }
 
@@ -118,10 +98,6 @@ class ModelFactory:
         "opus3": "claude-3-opus-latest",
         "deepseekv3": "deepseek-chat",
         "deepseek": "deepseek-chat",
-        "llama4s": "meta-llama/llama-4-scout:free",
-        "llama4m": "meta-llama/llama-4-maverick:free",
-        "reka3": "reka/reka-flash-3:free",
-        "gemini25": "google/gemini-2.5-pro-exp-03-25:free",
     }
 
     # Mapping of providers to their LLM classes
@@ -131,7 +107,7 @@ class ModelFactory:
         Provider.FAST_AGENT: PassthroughLLM,
         Provider.DEEPSEEK: DeepSeekAugmentedLLM,
         Provider.GENERIC: GenericAugmentedLLM,
-        Provider.OPENROUTER: AugmentedOpenRouterLLM,
+        Provider.OPENROUTER: OpenRouterAugmentedLLM,
     }
 
     # Mapping of special model names to their specific LLM classes
@@ -160,21 +136,8 @@ class ModelFactory:
         # Check first part for provider
         if len(model_parts) > 1:
             potential_provider = model_parts[0]
-            # For OpenRouter models, keep the full model path
-            if (
-                model_string in cls.DEFAULT_PROVIDERS
-                and cls.DEFAULT_PROVIDERS[model_string] == Provider.OPENROUTER
-            ):
-                model_name = model_string
-                provider = Provider.OPENROUTER
-                return ModelConfig(
-                    provider=provider, model_name=model_name, reasoning_effort=reasoning_effort
-                )
-            # Handle both colon and slash separators for provider
-            if ":" in potential_provider:
-                potential_provider = potential_provider.split(":")[0]
-            if potential_provider in cls.PROVIDER_MAP:
-                provider = cls.PROVIDER_MAP[potential_provider]
+            if any(provider.value == potential_provider for provider in Provider):
+                provider = Provider(potential_provider)
                 model_parts = model_parts[1:]
 
         # Join remaining parts as model name
